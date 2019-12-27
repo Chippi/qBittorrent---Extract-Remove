@@ -1,32 +1,38 @@
 import sys
 import os
+import subprocess
 import time
-import zipfile
- 
+
 args = sys.argv
 torrentName = args[1]
 directory = '/media/pi/My Passport/Torrents/Seeding/' + torrentName
-extensionsToExtract = ['.zip', '.rar']
+tempDirectory = '/media/pi/My Passport/Torrents/Temp'
 extensionsToRemove = ['.mkv', '.avi']
-minutesToSleep = 15 * 60
+minutesToSleep = 60 * 60
 hasExtracted = False
  
 def getFilesInDirectory():
     for subdir, dirs, files in os.walk(directory):
         return files
  
-def isZipOrRarFile(file):
-    return getFileExtension(file) in extensionsToExtract
+def isRarFile(file):
+    return getFileExtension(file) == '.rar'
  
 def extractArchive(file):
     print('Extracting ' + file)
-    with zipfile.ZipFile(directory + '/' + file, 'r') as zf:
-        for item in zf.namelist():
-            try:
-                zf.extract(item, path=directory)
-                print('Extracted ' + item)
-            except:
-                print('Could not extract ' + item)
+    
+    tempExtractDir = str(time.time())
+    goToTempDir = "cd '" + tempDirectory + "'"
+    createTempExtractDir = "mkdir " + tempExtractDir
+    goToTempExtractDir = goToTempDir + "/" + tempExtractDir
+    extractRar = "7z e '" + directory + "/" + file + "'"
+    moveFilesToDirectory = "mv * '" + directory + "'"
+    removeTempExtractDir = "rmdir " + tempExtractDir
+    
+    subprocess.call(goToTempDir + ' && ' + createTempExtractDir, shell=True)
+    subprocess.call(goToTempExtractDir + ' && ' + extractRar, shell=True)
+    subprocess.call(goToTempExtractDir + ' && ' + moveFilesToDirectory, shell=True)
+    subprocess.call(goToTempDir + ' && ' + removeTempExtractDir, shell=True)
  
 def removeFiles():
     for file in getFilesInDirectory():
@@ -42,7 +48,7 @@ if os.path.isfile(directory):
     exit()
  
 for file in getFilesInDirectory():
-    if isZipOrRarFile(file):
+    if isRarFile(file):
         hasExtracted = True
         extractArchive(file)
  
